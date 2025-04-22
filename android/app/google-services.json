@@ -1,0 +1,85 @@
+{
+  "project_info": {
+    "project_number": "853795611602",
+    "firebase_url": "https://danentang-4cfc9-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "danentang-4cfc9",
+    "storage_bucket": "danentang-4cfc9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853795611602:android:e5f16a61ec705f34721e0b",
+        "android_client_info": {
+          "package_name": "com.danentang.app.danentang"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "853795611602-m79llgtmn37jfak8g5vkcnmoiicmjlfc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.danentang.app.danentang",
+            "certificate_hash": "b2e241f5652f42a67ac4b24c7c4e37a0ec1f7c8a"
+          }
+        },
+        {
+          "client_id": "853795611602-bhdcstbcphmh7ircfhe8mrpmoott59ml.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBxFav8mSqLhtXFOhMTqeW-7qF49uxzZ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "853795611602-bhdcstbcphmh7ircfhe8mrpmoott59ml.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:853795611602:android:32828ca01044ced3721e0b",
+        "android_client_info": {
+          "package_name": "com.danentangck.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "853795611602-birt2ujvsq1l86vcf38vb0ebf4bjvln8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.danentangck.app",
+            "certificate_hash": "b2e241f5652f42a67ac4b24c7c4e37a0ec1f7c8a"
+          }
+        },
+        {
+          "client_id": "853795611602-bhdcstbcphmh7ircfhe8mrpmoott59ml.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBxFav8mSqLhtXFOhMTqeW-7qF49uxzZ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "853795611602-bhdcstbcphmh7ircfhe8mrpmoott59ml.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
