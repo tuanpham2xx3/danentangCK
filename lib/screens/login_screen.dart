@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Tiêu đề
                   const Text(
-                    'Welcome to KLING AI',
+                    'Welcome to TUNIS AI',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

@@ -4,7 +4,8 @@ import 'dart:io';
 import 'dart:async';
 import '../models/ai_model.dart';
 import '../models/generated_image.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ServerException implements Exception {
   final String message;
@@ -16,24 +17,19 @@ class ServerException implements Exception {
 
 class ApiService {
   // Sử dụng 10.0.2.2 cho Android Emulator, localhost cho các môi trường khác
-  static String get baseUrl {
-    if (kIsWeb) {
-      return 'https://5a47-2001-ee0-4b4b-d9e0-a1f9-2033-fe0f-fd57.ngrok-free.app';
-    } else if (Platform.isAndroid) {
-      return 'https://5a47-2001-ee0-4b4b-d9e0-a1f9-2033-fe0f-fd57.ngrok-free.app';
-    }
-    return 'https://5a47-2001-ee0-4b4b-d9e0-a1f9-2033-fe0f-fd57.ngrok-free.app';
-  }
+  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'https://default-url.com';
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
-  
+
   static final ApiService _instance = ApiService._internal();
   
   factory ApiService() {
     return _instance;
   }
 
-  ApiService._internal();
+  ApiService._internal(){
+    print('🌐 API Base URL đang sử dụng: $baseUrl');
+  }
 
 
 
@@ -98,10 +94,7 @@ class ApiService {
       try {
         final response = await http.post(
           Uri.parse('$baseUrl$endpoint'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Connection': 'keep-alive',
-          },
+            headers: await _getAuthHeaders(),
           body: json.encode(data),
         ).timeout(
           const Duration(seconds: 30),
@@ -198,5 +191,19 @@ class ApiService {
     }
     
     throw Exception('Lỗi từ server (${response.statusCode}): $errorMessage');
+  }
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken();
+
+    if (token == null) {
+      throw Exception('Người dùng chưa đăng nhập. Không thể gửi yêu cầu có xác thực.');
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+      'Connection': 'keep-alive',
+    };
   }
 }

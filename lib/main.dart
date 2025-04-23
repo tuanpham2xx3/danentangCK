@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/firebase_service.dart';
@@ -8,7 +9,8 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+  await dotenv.load(fileName: ".env");
+
   try {
     // Khởi tạo Firebase với các tùy chọn cụ thể cho từng nền tảng
     await Firebase.initializeApp(
