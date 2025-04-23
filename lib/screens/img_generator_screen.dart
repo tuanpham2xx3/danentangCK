@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import '../services/api_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
@@ -168,13 +167,13 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
 
   Future<void> _downloadImage(String imageUrl) async {
     try {
-      // Kiểm tra và yêu cầu quyền truy cập bộ nhớ
+      // Check and request storage permission
       final status = await Permission.storage.status;
       if (!status.isGranted) {
         final result = await Permission.storage.request();
         if (!result.isGranted) {
           if (mounted) {
-            _showError('Cần cấp quyền truy cập bộ nhớ để lưu ảnh');
+            _showError('Storage permission is required to save images');
           }
           return;
         }
@@ -182,20 +181,17 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
 
       final response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode == 200) {
-        final result = await ImageGallerySaver.saveImage(
-          response.bodyBytes,
-          quality: 100,
-          name: 'image_${DateTime.now().millisecondsSinceEpoch}',
-        );
+        final directory = await getApplicationDocumentsDirectory();
+        final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final filePath = '${directory.path}/$fileName';
         
-        if (result['isSuccess']) {
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đã lưu ảnh vào thư viện thành công')),
-            );
-          }
-        } else {
-          throw Exception('Không thể lưu ảnh vào thư viện');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Image saved to: $filePath')),
+          );
         }
       }
     } catch (e) {

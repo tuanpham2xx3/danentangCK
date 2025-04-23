@@ -18,11 +18,11 @@ class ApiService {
   // Sử dụng 10.0.2.2 cho Android Emulator, localhost cho các môi trường khác
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://localhost:3000';
+      return 'https://5a47-2001-ee0-4b4b-d9e0-a1f9-2033-fe0f-fd57.ngrok-free.app';
     } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000';
+      return 'https://5a47-2001-ee0-4b4b-d9e0-a1f9-2033-fe0f-fd57.ngrok-free.app';
     }
-    return 'http://localhost:3000';
+    return 'https://5a47-2001-ee0-4b4b-d9e0-a1f9-2033-fe0f-fd57.ngrok-free.app';
   }
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
@@ -115,10 +115,10 @@ class ApiService {
         }
         
         return _handleResponse(response);
-      } on SocketException {
+      } on SocketException catch (e) {
         lastError = Exception('Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet.');
         retryCount++;
-      } on TimeoutException {
+      } on TimeoutException catch (e) {
         lastError = Exception('Request timed out. Vui lòng thử lại.');
         retryCount++;
       } on ServerException catch (e) {

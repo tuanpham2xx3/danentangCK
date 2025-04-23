@@ -31,10 +31,10 @@ class _MainScreenState extends State<MainScreen> {
     final user = _authService.currentUser;
     if (user != null) {
       _creditsStream = _firebaseService
-          .getDataStream('users/${user.email}')
-          .map((userData) =>
-              userData != null ? (userData['credit'] as num).toDouble() : 0.0)
+          .getUserCreditStream(user.email!)
           .asBroadcastStream();
+    } else {
+      _creditsStream = Stream.value(0.0);
     }
   }
 
@@ -99,7 +99,7 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
       body: IndexedStack(
-        index: _currentIndex == 2 ? 0 : _currentIndex, // If create button is tapped, show home screen
+        index: _currentIndex == 2 ? 0 : _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: KlingBottomNavigation(
@@ -146,7 +146,7 @@ class _MainScreenState extends State<MainScreen> {
       },
     );
   }
-  
+
   void _showImageGenerator() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -167,7 +167,7 @@ class _MainScreenState extends State<MainScreen> {
         Navigator.pop(context);
         if (label == 'Image') {
           setState(() {
-            _currentIndex = 0; // Chuyển về màn hình chính
+            _currentIndex = 0;
           });
           _showImageGenerator();
         }

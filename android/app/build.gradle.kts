@@ -5,6 +5,10 @@ plugins {
     id("com.google.gms.google-services")
     id("dev.flutter.flutter-gradle-plugin")
 }
+repositories {
+    google()
+    mavenCentral()
+}
 dependencies {
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.12.0"))

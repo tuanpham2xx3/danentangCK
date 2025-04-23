@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
@@ -38,26 +40,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       // Hiển thị thông báo đang xử lý
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đang tạo tài khoản...')),
       );
-      
-      await _authService.registerWithEmailAndPassword(
+
+      final userCredential = await _authService.registerWithEmailAndPassword(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
       
       if (!mounted) return;
       
-      // Hiển thị thông báo thành công
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đăng ký thành công!')),
-      );
-      
-      // Chuyển đến màn hình chính sau khi đăng ký thành công
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      if (userCredential.user != null) {
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đăng ký thành công!')),
+        );
+        
+        // Chuyển đến màn hình chính sau khi đăng ký thành công
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      } else {
+        throw Exception('Không thể tạo tài khoản người dùng');
+      }
     } catch (e) {
       setState(() {
         _errorMessage = _getErrorMessage(e);
@@ -84,13 +91,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
           return 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet của bạn';
         case 'too-many-requests':
           return 'Quá nhiều yêu cầu. Vui lòng thử lại sau';
+        case 'invalid-argument':
+          return 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đăng ký';
+        case 'invalid-credential':
+          return 'Thông tin xác thực không hợp lệ. Vui lòng kiểm tra lại email và mật khẩu';
+        case 'user-disabled':
+          return 'Tài khoản đã bị vô hiệu hóa';
         default:
-          return 'Đăng ký thất bại: ${error.message}';
+          // Log chi tiết lỗi để debug
+          print('Chi tiết lỗi: ${error.toString()}');
+          return 'Đăng ký thất bại: ${error.message ?? "Lỗi không xác định"}';
       }
+    } else if (error is TypeError) {
+      // Xử lý lỗi chuyển đổi kiểu dữ liệu
+      print('Lỗi chuyển đổi kiểu dữ liệu: ${error.toString()}');
+      return 'Lỗi xử lý dữ liệu: Vui lòng kiểm tra lại thông tin đăng ký';
     }
     // Log lỗi không xác định
     print('Lỗi không xác định: $error');
-    return 'Đăng ký thất bại: $error';
+    return 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau';
   }
 
   @override

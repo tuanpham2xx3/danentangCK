@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/widgets.dart';
 import 'firebase_service.dart';
 
 class AuthService {
@@ -25,15 +26,15 @@ class AuthService {
         // Kiểm tra token hợp lệ
         try {
           await user.getIdToken(true);
-          print('Token hợp lệ cho user ${user.uid}');
+          debugPrint('Token hợp lệ cho user ${user.uid}');
         } catch (e) {
-          print('Token không hợp lệ, đăng xuất user');
+          debugPrint('Token không hợp lệ, đăng xuất user');
           await signOut();
         }
       }
       _isInitialized = true;
     } catch (e) {
-      print('Lỗi khởi tạo Firebase Auth: $e');
+      debugPrint('Lỗi khởi tạo Firebase Auth: $e');
       rethrow;
     }
   }
@@ -48,21 +49,43 @@ class AuthService {
   Future<UserCredential> registerWithEmailAndPassword(String email, String password) async {
     try {
       // Thêm xử lý lỗi chi tiết hơn
-      final credential = await _auth.createUserWithEmailAndPassword(
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      // Tạo dữ liệu người dùng trong Realtime Database
-      await FirebaseService().createUserData(email);
+      if (userCredential.user == null) {
+        throw FirebaseAuthException(
+          code: 'null-user',
+          message: 'Không thể tạo người dùng mới',
+        );
+      }
+
+      try {
+        // Tạo dữ liệu người dùng trong Realtime Database
+        await FirebaseService().createUserData(email);
+        debugPrint('Đã tạo dữ liệu người dùng thành công cho: $email');
+      } catch (dbError, stackTrace) {
+        // Xử lý lỗi khi tạo dữ liệu người dùng
+        debugPrint('Lỗi chi tiết khi tạo dữ liệu người dùng:');
+        debugPrint('Error: $dbError');
+        debugPrint('Kiểu lỗi: ${dbError.runtimeType}');
+        debugPrint('Stack trace: $stackTrace');
+        
+        // Vẫn trả về credential nhưng ghi log lỗi
+        debugPrint('Tài khoản đã được tạo nhưng có lỗi khi khởi tạo dữ liệu người dùng');
+      }
       
-      return credential;
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       // Log lỗi để dễ dàng debug
-      print('Lỗi Firebase Auth khi đăng ký: ${e.code} - ${e.message}');
+      debugPrint('Lỗi Firebase Auth khi đăng ký: ${e.code} - ${e.message}');
       rethrow;
-    } catch (e) {
-      print('Lỗi không xác định khi đăng ký: $e');
+    } catch (e, stackTrace) {
+      debugPrint('Lỗi không xác định khi đăng ký:');
+      debugPrint('Error: $e');
+      debugPrint('Kiểu lỗi: ${e.runtimeType}');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -74,13 +97,13 @@ class AuthService {
         email: email,
         password: password,
       );
-      print('Đăng nhập thành công - UID: ${credential.user?.uid}');
+      debugPrint('Đăng nhập thành công - UID: ${credential.user?.uid}');
       return credential;
     } on FirebaseAuthException catch (e) {
-      print('Lỗi Firebase Auth khi đăng nhập: ${e.code} - ${e.message}');
+      debugPrint('Lỗi Firebase Auth khi đăng nhập: ${e.code} - ${e.message}');
       rethrow;
     } catch (e) {
-      print('Lỗi không xác định khi đăng nhập: $e');
+      debugPrint('Lỗi không xác định khi đăng nhập: $e');
       rethrow;
     }
   }

@@ -31,4 +31,3 @@ plugins {
 }
 
 include(":app")
-include(":plugin_fixes:image_gallery_saver")

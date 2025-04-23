@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/widgets.dart';
 
 class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
@@ -51,28 +52,60 @@ class FirebaseService {
   // Tạo thông tin người dùng mới trong Realtime Database
   Future<void> createUserData(String email) async {
     final userPath = 'users/${_sanitizePath(email)}';
-    final userData = {
+    final Map<String, dynamic> userData = {
       'isPremium': false,
-      'credit': 100,
-      'historyImage': []
+      'credit': 100.0,
+      'historyImage': {
+        '_init': true
+      },
+      'email': email,
+      'createdAt': DateTime.now().toIso8601String()
     };
-    await setData(userPath, userData);
+    try {
+      debugPrint('Bắt đầu tạo dữ liệu người dùng cho email: $email');
+      debugPrint('Đường dẫn Firebase: $userPath');
+      debugPrint('Dữ liệu sẽ được tạo: $userData');
+      
+      // Kiểm tra xem dữ liệu đã tồn tại chưa
+      final existingData = await getData(userPath);
+      if (existingData != null) {
+        debugPrint('Dữ liệu người dùng đã tồn tại: $existingData');
+        return;
+      }
+      
+      await _databaseReference.child(userPath).set(userData);
+      
+      // Xác nhận dữ liệu đã được tạo
+      final createdData = await getData(userPath);
+      debugPrint('Dữ liệu đã được tạo thành công: $createdData');
+    } catch (e, stackTrace) {
+      debugPrint('Lỗi chi tiết khi tạo dữ liệu người dùng:');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   // Thêm URL ảnh vào lịch sử của người dùng
   Future<void> addImageToHistory(String email, String imageUrl) async {
-    final userPath = 'users/${_sanitizePath(email)}/historyImage';
-    final currentData = await getData(userPath) ?? [];
+    try {
+      final sanitizedEmail = _sanitizePath(email);
+      final historyPath = 'users/$sanitizedEmail/historyImage';
 
-    List<dynamic> historyList = List.from(currentData);
-    historyList.add({
-      'imageURL': imageUrl,
-      'timestamp': DateTime.now().toIso8601String()
-    });
+      final newImageData = {
+        'imageURL': imageUrl,
+        'timestamp': DateTime.now().toIso8601String()
+      };
 
-    await setData(userPath, historyList);
+      // Push thêm ảnh mới vào danh sách historyImage
+      await _databaseReference.child(historyPath).push().set(newImageData);
+      debugPrint('✅ Đã thêm ảnh vào lịch sử tại $historyPath');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Lỗi khi thêm ảnh vào lịch sử: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      rethrow;
+    }
   }
-
   // Cập nhật trạng thái premium của người dùng
   Future<void> updatePremiumStatus(String email, bool isPremium) async {
     final userPath = 'users/${_sanitizePath(email)}';
@@ -81,9 +114,10 @@ class FirebaseService {
 
   // Cập nhật số credit của người dùng
   Future<void> updateUserCredit(String email, int credit) async {
-    final userPath = 'users/${_sanitizePath(email)}';
-    await updateData(userPath, {'credit': credit});
+    final creditPath = 'users/${_sanitizePath(email)}/credit';
+    await _databaseReference.child(creditPath).set(credit);
   }
+
 
   // Theo dõi thay đổi dữ liệu từ một đường dẫn
   Stream<dynamic> getDataStream(String path) {
@@ -96,51 +130,64 @@ class FirebaseService {
   // Lấy số credit của người dùng
   Future<double> getUserCredit(String email) async {
     try {
-      final userPath = 'users/${_sanitizePath(email)}';
-      final userData = await getData(userPath);
-      print('Dữ liệu người dùng từ Firebase: $userData');
+      final creditPath = 'users/${_sanitizePath(email)}/credit';
+      final snapshot = await _databaseReference.child(creditPath).get();
+      final value = snapshot.value;
 
-      if (userData != null && userData is Map) {
-        final creditValue = userData['credit'];
-        print('Giá trị credit thô: $creditValue');
+      print('📥 Giá trị credit từ Firebase: $value (${value.runtimeType})');
 
-        if (creditValue != null) {
-          // Xử lý các kiểu dữ liệu có thể có
-          if (creditValue is int) {
-            print('Credit là kiểu int: $creditValue');
-            return creditValue.toDouble();
-          } else if (creditValue is double) {
-            print('Credit là kiểu double: $creditValue');
-            return creditValue;
-          } else if (creditValue is String) {
-            final parsedValue = double.tryParse(creditValue);
-            print('Credit là kiểu String: $creditValue, sau khi parse: $parsedValue');
-            return parsedValue ?? 0.0;
-          }
-          print('Credit có kiểu dữ liệu không xác định: ${creditValue.runtimeType}');
-          return 0.0;
-        }
-      }
-      print('Không tìm thấy credit cho user $email');
+      if (value == null) return 0.0;
+      if (value is int) return value.toDouble();
+      if (value is double) return value;
+      if (value is String) return double.tryParse(value) ?? 0.0;
+
       return 0.0;
-    } catch (e) {
-      print('Lỗi khi lấy credit của user $email: $e');
+    } catch (e, stackTrace) {
+      print('🚨 Lỗi khi lấy credit của user $email: $e');
+      print('📍 Stack trace: $stackTrace');
       return 0.0;
     }
   }
 
+
+
   // ✅ Stream theo dõi credit của người dùng theo email
   Stream<double> getUserCreditStream(String email) {
-    final path = 'users/${_sanitizePath(email)}';
-    return _databaseReference.child(path).onValue.map((event) {
-      final data = event.snapshot.value;
-      if (data is Map && data['credit'] != null) {
-        final creditValue = data['credit'];
-        if (creditValue is int) return creditValue.toDouble();
-        if (creditValue is double) return creditValue;
-        if (creditValue is String) return double.tryParse(creditValue) ?? 0.0;
-      }
+    final creditPath = 'users/${_sanitizePath(email)}/credit';
+    return _databaseReference.child(creditPath).onValue.map((event) {
+      final value = event.snapshot.value;
+      if (value == null) return 0.0;
+      if (value is int) return value.toDouble();
+      if (value is double) return value;
+      if (value is String) return double.tryParse(value) ?? 0.0;
       return 0.0;
     });
+  }
+
+  Future<List<Map<String, dynamic>>> getHistoryImages(String email) async {
+    final sanitizedEmail = _sanitizePath(email);
+    final historyPath = 'users/$sanitizedEmail/historyImage';
+    final snapshot = await _databaseReference.child(historyPath).get();
+
+    if (!snapshot.exists) {
+      return [];
+    }
+
+    final Map<dynamic, dynamic>? data = snapshot.value as Map?;
+    if (data == null) return [];
+
+    // Bỏ qua `_init` hoặc các phần tử không hợp lệ
+    final images = data.entries
+        .where((entry) =>
+    entry.key != '_init' &&
+        entry.value is Map &&
+        (entry.value as Map).containsKey('imageURL'))
+        .map((entry) => {
+      'imageURL': (entry.value as Map)['imageURL'],
+      'timestamp': (entry.value as Map)['timestamp'],
+    })
+        .toList();
+
+    return images.reversed.toList(); // Trả về danh sách đảo ngược để hiển thị mới nhất trước
   }
 }

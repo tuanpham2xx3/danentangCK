@@ -29,8 +29,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final user = _authService.currentUser;
     if (user != null) {
       try {
-        final userPath = 'users/${user.email}/historyImage';
-        final historyData = await _firebaseService.getData(userPath);
+        final historyData = await _firebaseService.getHistoryImages(user.email!);
         
         setState(() {
           if (historyData == null) {
