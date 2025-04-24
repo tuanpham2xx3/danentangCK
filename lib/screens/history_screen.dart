@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -18,54 +17,37 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _firebaseService = FirebaseService();
   final _authService = AuthService();
-  List<String> _historyImages = [];
+  List<Map<String, dynamic>> _historyImages = [];
   bool _isLoading = true;
-  StreamSubscription? _historySubscription;
 
   @override
   void initState() {
     super.initState();
-    _setupHistoryListener();
+    _loadHistory();
   }
 
-  void _setupHistoryListener() {
+  Future<void> _loadHistory() async {
     final user = _authService.currentUser;
-    if (user != null) {
-      _historySubscription = _firebaseService
-          .getImageHistoryStream(user.email!)
-          .listen(
-            (urls) {
-              if (mounted) {
-                setState(() {
-                  _historyImages = urls;
-                  _isLoading = false;
-                });
-              }
-            },
-            onError: (error) {
-              debugPrint('Error in history stream: $error');
-              if (mounted) {
-                setState(() {
-                  _isLoading = false;
-                });
-                _showError('Failed to load history');
-              }
-            },
-          );
-    } else {
+    if (user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final images = await _firebaseService.getHistoryImages(user.email!);
       setState(() {
+        _historyImages = images;
         _isLoading = false;
       });
+    } catch (e) {
+      debugPrint('Lỗi khi tải lịch sử: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showError('Không thể tải lịch sử');
+      }
     }
   }
 
-  @override
-  void dispose() {
-    _historySubscription?.cancel();
-    super.dispose();
-  }
-
-  // Update the GridView.builder to use the new _historyImages list
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -82,19 +64,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.history,
-                    size: 64,
-                    color: Colors.grey[700],
-                  ),
+                  Icon(Icons.history, size: 64, color: Colors.grey[700]),
                   const SizedBox(height: 16),
-                  Text(
-                    'No history yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[700],
-                    ),
-                  ),
+                  Text('Chưa có ảnh nào', style: TextStyle(fontSize: 18, color: Colors.grey[700])),
                 ],
               ),
             ),
@@ -103,15 +75,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
               itemCount: _historyImages.length,
               itemBuilder: (context, index) {
-                final imageUrl = _historyImages[index];
-                return _buildImageCard(imageUrl);
+                final image = _historyImages[index];
+                return _buildImageCard(image['imageURL']);
               },
             ),
           ),
@@ -121,22 +93,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _showError(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
   Future<void> _downloadImage(String imageUrl) async {
     try {
-      // Kiểm tra và yêu cầu quyền truy cập bộ nhớ
       final status = await Permission.storage.status;
       if (!status.isGranted) {
         final result = await Permission.storage.request();
         if (!result.isGranted) {
-          if (mounted) {
-            _showError('Cần cấp quyền truy cập bộ nhớ để lưu ảnh');
-          }
+          if (mounted) _showError('Cần cấp quyền truy cập bộ nhớ');
           return;
         }
       }
@@ -154,18 +121,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        _showError('Failed to download image: ${e.toString()}');
-      }
+      if (mounted) _showError('Lỗi tải ảnh: ${e.toString()}');
     }
   }
 
   Widget _buildImageCard(String imageUrl) {
     return Card(
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Stack(
         children: [
           InkWell(
@@ -177,15 +140,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Image.network(
                       imageUrl,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 32,
-                          ),
-                        );
-                      },
+                      errorBuilder: (context, error, stackTrace) => const Center(
+                        child: Icon(Icons.error_outline, color: Colors.red, size: 32),
+                      ),
                     ),
                   ),
                 ),
@@ -194,32 +151,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: Hero(
               tag: imageUrl,
               child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                ),
+                decoration: BoxDecoration(color: Colors.grey[900]),
                 child: Image.network(
                   imageUrl,
                   fit: BoxFit.cover,
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return Center(
-                      child: CircularProgressIndicator(
-                        value: progress.expectedTotalBytes != null
-                            ? progress.cumulativeBytesLoaded /
-                                progress.expectedTotalBytes!
-                            : null,
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 32,
-                      ),
-                    );
-                  },
+                  loadingBuilder: (context, child, progress) => progress == null
+                      ? child
+                      : Center(
+                    child: CircularProgressIndicator(
+                      value: progress.expectedTotalBytes != null
+                          ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                  errorBuilder: (context, error, stackTrace) => const Center(
+                    child: Icon(Icons.error_outline, color: Colors.red, size: 32),
+                  ),
                 ),
               ),
             ),

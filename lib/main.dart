@@ -6,10 +6,13 @@ import 'screens/main_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  MobileAds.instance.initialize(); // Khởi tạo SDK quảng cáo
 
   try {
     // Khởi tạo Firebase với các tùy chọn cụ thể cho từng nền tảng

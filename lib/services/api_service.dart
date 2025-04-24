@@ -17,6 +17,14 @@ class ServerException implements Exception {
 
 class ApiService {
   // Sử dụng 10.0.2.2 cho Android Emulator, localhost cho các môi trường khác
+  // Khi bro muốn chạy localhost =))
+  // static String get baseUrl {
+  //   if (Platform.isAndroid) {
+  //     return dotenv.env['API_BASE_URL_LOCALHOST_ANDROID'];
+  //   } else {
+  //     return dotenv.env['API_BASE_URL_LOCALHOST'] ??;
+  //   }
+  // }
   static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'https://default-url.com';
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
@@ -47,10 +55,11 @@ class ApiService {
 
   Future<List<GeneratedImage>> generateImage({
     required String prompt,
+    required String model, // thêm vào đây
   }) async {
     final response = await post('/api/generate-image', {
       'prompt': prompt,
-      'model': "runware:100@1",
+      'model': model, // sửa lại đây
       'negativePrompt': "",
       'width': 512,
       'height': 512,
@@ -58,8 +67,9 @@ class ApiService {
       'steps': 20,
     });
     final List<dynamic> images = response['data'];
-    return images.map((image) => GeneratedImage.fromJson(image)).toList(); 
+    return images.map((image) => GeneratedImage.fromJson(image)).toList();
   }
+
 
   Future<void> deleteImage(String imageId) async {
     await delete('/api/images/$imageId');

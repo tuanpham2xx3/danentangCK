@@ -1,13 +1,15 @@
-import 'package:danentang/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:danentang/services/auth_service.dart';
+import 'package:danentang/services/firebase_service.dart';
+import 'package:danentang/helpers/rewarded_ad_helper.dart'; // nhớ tạo file này
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-class KlingDrawer extends StatelessWidget {
+class KlingDrawer extends StatefulWidget {
   final double credits;
   final VoidCallback onUpgradePlan;
   final VoidCallback onSignOut;
-  final AuthService _authService = AuthService();
 
-  KlingDrawer({
+  const KlingDrawer({
     super.key,
     required this.credits,
     required this.onUpgradePlan,
@@ -15,7 +17,41 @@ class KlingDrawer extends StatelessWidget {
   });
 
   @override
+  State<KlingDrawer> createState() => _KlingDrawerState();
+}
+
+class _KlingDrawerState extends State<KlingDrawer> {
+  final AuthService _authService = AuthService();
+  final FirebaseService _firebaseService = FirebaseService();
+
+  bool _isPremium = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPremiumStatus();
+  }
+
+  Future<void> _loadPremiumStatus() async {
+    final email = _authService.currentUser?.email;
+    if (email != null) {
+      final premium = await _firebaseService.getUserPremiumStatus(email);
+      setState(() {
+        _isPremium = premium;
+      });
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final email = _authService.currentUser?.email ?? 'Not signed in';
+
     return Drawer(
       backgroundColor: Colors.black,
       child: ListView(
@@ -35,41 +71,100 @@ class KlingDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _authService.currentUser?.email ?? 'Not signed in',
+                  email,
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.workspace_premium,
+                      color: _isPremium ? Colors.amber : Colors.blueAccent,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _isPremium ? 'Premium' : 'Trial',
+                      style: TextStyle(
+                        color: _isPremium ? Colors.amber : Colors.blueAccent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          // Upgrade Plan
+
+          // Chỉ hiển thị nút GET PREMIUM nếu chưa phải Premium
+          if (!_isPremium)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.workspace_premium, color: Colors.yellow),
+                title: const Text(
+                  'GET PREMIUM',
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text(
+                  'Use Premium Model',
+                  style: TextStyle(color: Colors.black87),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.black),
+                onTap: () {
+                  final email = _authService.currentUser?.email;
+                  if (email == null) return;
+
+                  RewardedAdHelper().loadAd(() async {
+                    await _firebaseService.updatePremiumStatus(email, true);
+                    setState(() => _isPremium = true);
+                    _showSnack("🎉 Bạn đã nâng cấp Premium thành công!");
+                  });
+                },
+              ),
+            ),
+
+          // Nút nhận thêm credit
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.amber.shade100,
+              color: Colors.amber.shade50,
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListTile(
-              leading: const Icon(Icons.star_border, color: Colors.black),
+              leading: const Icon(Icons.star, color: Colors.yellow),
               title: const Text(
-                'Upgrade your plan',
+                'GET MORE CREDIT',
                 style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
               ),
               subtitle: const Text(
-                'More Credits & Premium Features',
+                'Get more 10 credits',
                 style: TextStyle(color: Colors.black87),
               ),
               trailing: const Icon(Icons.chevron_right, color: Colors.black),
-              onTap: onUpgradePlan,
+              onTap: () {
+                final email = _authService.currentUser?.email;
+                if (email == null) return;
+
+                RewardedAdHelper().loadAd(() async {
+                  double current = await _firebaseService.getUserCredit(email);
+                  await _firebaseService.updateUserCredit(email, (current + 10).toInt());
+                  _showSnack("🎁 Nhận thêm 10 credits thành công!");
+                });
+              },
             ),
           ),
+
           const Divider(color: Colors.grey),
           ListTile(
             leading: const Icon(Icons.help, color: Colors.white),
             title: const Text('Help Center', style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
-          // Contact Us
           ListTile(
             leading: const Icon(Icons.contact_support, color: Colors.white),
             title: const Text('Contact Us', style: TextStyle(color: Colors.white)),
@@ -80,31 +175,27 @@ class KlingDrawer extends StatelessWidget {
             title: const Text('Privacy Policy', style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
-          // Terms of Service
           ListTile(
             leading: const Icon(Icons.description, color: Colors.white),
             title: const Text('Terms of Service', style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
-          // Information Shared with Third Party
           ListTile(
             leading: const Icon(Icons.share, color: Colors.white),
             title: const Text('Information Shared with Third Party',
                 style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
-          // About Us
           ListTile(
             leading: const Icon(Icons.info, color: Colors.white),
             title: const Text('About Us', style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
           const Divider(color: Colors.grey),
-          // Sign out
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Sign out', style: TextStyle(color: Colors.red)),
-            onTap: onSignOut,
+            onTap: widget.onSignOut,
           ),
         ],
       ),
