@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -16,62 +18,54 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _firebaseService = FirebaseService();
   final _authService = AuthService();
-  List<Map<String, dynamic>> _historyImages = [];
+  List<String> _historyImages = [];
   bool _isLoading = true;
+  StreamSubscription? _historySubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadUserHistory();
+    _setupHistoryListener();
   }
 
-  Future<void> _loadUserHistory() async {
+  void _setupHistoryListener() {
     final user = _authService.currentUser;
     if (user != null) {
-      try {
-        final historyData = await _firebaseService.getHistoryImages(user.email!);
-        
-        setState(() {
-          if (historyData == null) {
-            _historyImages = [];
-          } else if (historyData is List) {
-            _historyImages = List<Map<String, dynamic>>.from(
-              historyData.map((item) {
-                if (item is Map) {
-                  final imageUrl = item['imageURL'];
-                  if (imageUrl != null && imageUrl.toString().isNotEmpty) {
-                    return {'imageURL': imageUrl.toString()};
-                  }
-                }
-                return null;
-              }).where((item) => item != null),
-            ).reversed.toList();
-          } else {
-            _historyImages = [];
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Dữ liệu không đúng định dạng')),
-            );
-          }
-          _isLoading = false;
-        });
-      } catch (e) {
-        setState(() {
-          _historyImages = [];
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể tải lịch sử: ${e.toString()}')),
-        );
-      }
+      _historySubscription = _firebaseService
+          .getImageHistoryStream(user.email!)
+          .listen(
+            (urls) {
+              if (mounted) {
+                setState(() {
+                  _historyImages = urls;
+                  _isLoading = false;
+                });
+              }
+            },
+            onError: (error) {
+              debugPrint('Error in history stream: $error');
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+                _showError('Failed to load history');
+              }
+            },
+          );
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  @override
+  void dispose() {
+    _historySubscription?.cancel();
+    super.dispose();
   }
 
+  // Update the GridView.builder to use the new _historyImages list
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -109,20 +103,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
               itemCount: _historyImages.length,
               itemBuilder: (context, index) {
-                final imageUrl = _historyImages[index]['imageURL'] as String;
+                final imageUrl = _historyImages[index];
                 return _buildImageCard(imageUrl);
               },
             ),
           ),
       ],
     );
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   Future<void> _downloadImage(String imageUrl) async {

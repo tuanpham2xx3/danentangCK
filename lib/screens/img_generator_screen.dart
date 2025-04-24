@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
@@ -7,6 +9,7 @@ import '../services/api_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
 import '../models/generated_image.dart';
+import 'package:dio/dio.dart';
 
 class ImgGeneratorScreen extends StatefulWidget {
   const ImgGeneratorScreen({super.key});
@@ -23,10 +26,36 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
   
   List<GeneratedImage> _generatedImages = [];
   bool _isLoading = false;
+  StreamSubscription? _historySubscription;
 
   @override
   void initState() {
     super.initState();
+    _setupHistoryListener();
+  }
+
+  void _setupHistoryListener() {
+    final user = _authService.currentUser;
+    if (user != null) {
+      _historySubscription = _firebaseService
+          .getImageHistoryStream(user.email!)
+          .listen((urls) {
+        if (mounted) {
+          setState(() {
+            _generatedImages = urls
+                .map((url) => GeneratedImage(url: url))
+                .toList();
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _historySubscription?.cancel();
+    _promptController.dispose();
+    super.dispose();
   }
 
 
@@ -56,18 +85,16 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
       final images = await _apiService.generateImage(
         prompt: _promptController.text,
       );
-
+  
       if (images.isNotEmpty) {
-        // Trừ 1 credit và lưu URL ảnh vào lịch sử
+        // Chỉ cần cập nhật credit và thêm vào history
+        // Stream sẽ tự động cập nhật UI
         await Future.wait([
           _firebaseService.updateUserCredit(user.email!, credit.toInt() - 1),
           _firebaseService.addImageToHistory(user.email!, images[0].url),
         ]);
-
-        setState(() {
-          _generatedImages = images + _generatedImages;
-          _isLoading = false;
-        });
+  
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -165,34 +192,32 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
     );
   }
 
-  Future<void> _downloadImage(String imageUrl) async {
+    Future<void> _downloadImage(String imageUrl) async {
     try {
-      // Check and request storage permission
-      final status = await Permission.storage.status;
-      if (!status.isGranted) {
-        final result = await Permission.storage.request();
-        if (!result.isGranted) {
-          if (mounted) {
-            _showError('Storage permission is required to save images');
-          }
-          return;
-        }
+      // Kiểm tra và yêu cầu quyền truy cập
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+        Permission.photos,
+        Permission.mediaLibrary,
+      ].request();
+
+      // Nếu đã được cấp quyền, tiến hành tải ảnh
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đang tải ảnh...')),
+        );
       }
 
-      final response = await http.get(Uri.parse(imageUrl));
-      if (response.statusCode == 200) {
-        final directory = await getApplicationDocumentsDirectory();
-        final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final filePath = '${directory.path}/$fileName';
-        
-        final file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-        
-          if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Image saved to: $filePath')),
-          );
-        }
+      final dio = Dio();
+      final fileName = 'AI_Image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savePath = '/storage/emulated/0/Download/$fileName';
+      
+      await dio.download(imageUrl, savePath);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã lưu ảnh: $fileName')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -200,6 +225,7 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
       }
     }
   }
+
 
   Widget _buildImageCard(String imageUrl) {
     return Card(
@@ -264,11 +290,5 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _promptController.dispose();
-    super.dispose();
   }
 }

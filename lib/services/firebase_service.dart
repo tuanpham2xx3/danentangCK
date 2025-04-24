@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+// Xóa import permission_handler
 
 class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
@@ -50,6 +52,9 @@ class FirebaseService {
   }
 
   // Tạo thông tin người dùng mới trong Realtime Database
+  // Thêm phương thức mới để yêu cầu quyền truy cập
+  // Xóa phương thức _requestStoragePermission
+  
   Future<void> createUserData(String email) async {
     final userPath = 'users/${_sanitizePath(email)}';
     final Map<String, dynamic> userData = {
@@ -63,6 +68,9 @@ class FirebaseService {
     };
     try {
       debugPrint('Bắt đầu tạo dữ liệu người dùng cho email: $email');
+      
+    
+      
       debugPrint('Đường dẫn Firebase: $userPath');
       debugPrint('Dữ liệu sẽ được tạo: $userData');
       
@@ -189,5 +197,37 @@ class FirebaseService {
         .toList();
 
     return images.reversed.toList(); // Trả về danh sách đảo ngược để hiển thị mới nhất trước
+  }
+  // Thêm phương thức này vào FirebaseService
+  Stream<List<String>> getImageHistoryStream(String email) {
+    final sanitizedEmail = _sanitizePath(email);
+    final historyPath = 'users/$sanitizedEmail/historyImage';
+    
+    return _databaseReference
+        .child(historyPath)
+        .onValue
+        .map((event) {
+          if (!event.snapshot.exists) return <String>[];
+          
+          final data = event.snapshot.value;
+          if (data == null || data is! Map) return <String>[];
+          
+          try {
+            final images = (data as Map)
+                .entries
+                .where((entry) => 
+                    entry.key != '_init' &&
+                    entry.value is Map &&
+                    (entry.value as Map).containsKey('imageURL'))
+                .map((entry) => (entry.value as Map)['imageURL'] as String)
+                .toList();
+            
+            debugPrint('Loaded ${images.length} images from history');
+            return images.reversed.toList();
+          } catch (e) {
+            debugPrint('Error parsing history data: $e');
+            return <String>[];
+          }
+        });
   }
 }

@@ -29,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             const CircleAvatar(
               radius: 50,
-              backgroundColor: Colors.grey,
+              backgroundColor: Colors.white,
               child: Icon(Icons.person, size: 50, color: Colors.white),
             ),
             const SizedBox(height: 20),
