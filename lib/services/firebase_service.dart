@@ -44,7 +44,7 @@ class FirebaseService {
     final userPath = 'users/${_sanitizePath(email)}';
     final userData = {
       'isPremium': false,
-      'credit': 100.0,
+      'credit': 5.0,
       'email': email,
       'createdAt': DateTime.now().toIso8601String(),
       'historyImage': [],
