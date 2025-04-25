@@ -150,20 +150,28 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
     );
   }
 
-  Future<void> _downloadImage(String imageUrl) async {
+ Future<void> _downloadImage(String imageUrl) async {
     try {
-      await [
+      // Kiểm tra và yêu cầu quyền truy cập
+      Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,
         Permission.photos,
         Permission.mediaLibrary,
       ].request();
 
+      // Nếu đã được cấp quyền, tiến hành tải ảnh
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đang tải ảnh...')),
+        );
+      }
+
       final dio = Dio();
       final fileName = 'AI_Image_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final savePath = '/storage/emulated/0/Download/$fileName';
-
+      
       await dio.download(imageUrl, savePath);
-
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đã lưu ảnh: $fileName')),
