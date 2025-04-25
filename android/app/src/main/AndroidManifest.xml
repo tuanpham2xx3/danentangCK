@@ -1,17 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Add these permissions -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.INTERNET"/> <!-- ⚠️ Bổ sung nếu thiếu -->
+
+    <!-- ✅ Quyền truy cập ảnh (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        android:required="false"/>
+
+    <!-- ✅ Internet cho API -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="GENERATE APP"
+        android:label="TUNIS AI"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"> <!-- ⚠️ Cho phép kết nối HTTP -->
+        android:usesCleartextTraffic="true">
 
-        <!-- ✅ App ID AdMob test để tránh crash -->
+        <!-- ✅ AdMob test App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
@@ -41,10 +42,12 @@
             android:value="2" />
     </application>
 
+    <!-- ✅ Cho phép xử lý văn bản ngoài -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+
 </manifest>

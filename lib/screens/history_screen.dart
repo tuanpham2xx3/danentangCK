@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
+import 'package:dio/dio.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -99,31 +100,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _downloadImage(String imageUrl) async {
     try {
-      final status = await Permission.storage.status;
-      if (!status.isGranted) {
-        final result = await Permission.storage.request();
-        if (!result.isGranted) {
-          if (mounted) _showError('Cần cấp quyền truy cập bộ nhớ');
-          return;
-        }
+      final status = await Permission.photos.request();
+      if (!status.isGranted && !status.isLimited) {
+        _showError('Cần cấp quyền truy cập ảnh để lưu');
+        return;
       }
 
-      final response = await http.get(Uri.parse(imageUrl));
-      if (response.statusCode == 200) {
-        final appDir = await getApplicationDocumentsDirectory();
-        final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.png';
-        final file = File('${appDir.path}/$fileName');
-        await file.writeAsBytes(response.bodyBytes);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã lưu ảnh thành công')),
-          );
-        }
+      final dio = Dio();
+      final fileName = 'AI_Image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savePath = '/storage/emulated/0/Download/$fileName';
+
+      await dio.download(imageUrl, savePath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã lưu ảnh: $fileName')),
+        );
       }
     } catch (e) {
-      if (mounted) _showError('Lỗi tải ảnh: ${e.toString()}');
+      if (mounted) {
+        _showError('Lỗi khi tải ảnh: ${e.toString()}');
+      }
     }
   }
+
 
   Widget _buildImageCard(String imageUrl) {
     return Card(
