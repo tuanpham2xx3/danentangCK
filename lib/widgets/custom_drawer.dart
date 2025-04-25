@@ -122,7 +122,7 @@ class _KlingDrawerState extends State<KlingDrawer> {
                   RewardedAdHelper().loadAd(() async {
                     await _firebaseService.updatePremiumStatus(email, true);
                     setState(() => _isPremium = true);
-                    _showSnack("🎉 Bạn đã nâng cấp Premium thành công!");
+                    _showSnack("🎉 You have successfully upgraded to Premium!");
                   });
                 },
               ),
@@ -153,7 +153,7 @@ class _KlingDrawerState extends State<KlingDrawer> {
                 RewardedAdHelper().loadAd(() async {
                   double current = await _firebaseService.getUserCredit(email);
                   await _firebaseService.updateUserCredit(email, (current + 10).toInt());
-                  _showSnack("🎁 Nhận thêm 10 credits thành công!");
+                  _showSnack("🎁 Get 10 more credits successfully!");
                 });
               },
             ),

@@ -42,7 +42,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Hiển thị thông báo đang xử lý
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đang tạo tài khoản...')),
+        const SnackBar(content: Text('Creating account...')),
       );
 
       final userCredential = await _authService.registerWithEmailAndPassword(
@@ -55,7 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (userCredential.user != null) {
         // Hiển thị thông báo thành công
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng ký thành công!')),
+          const SnackBar(content: Text('Registered successfully!')),
         );
         
         // Chuyển đến màn hình chính sau khi đăng ký thành công

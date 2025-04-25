@@ -67,7 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   Icon(Icons.history, size: 64, color: Colors.grey[700]),
                   const SizedBox(height: 16),
-                  Text('Chưa có ảnh nào', style: TextStyle(fontSize: 18, color: Colors.grey[700])),
+                  Text('There are no photos yet', style: TextStyle(fontSize: 18, color: Colors.grey[700])),
                 ],
               ),
             ),
@@ -102,7 +102,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     try {
       final status = await Permission.photos.request();
       if (!status.isGranted && !status.isLimited) {
-        _showError('Cần cấp quyền truy cập ảnh để lưu');
+        _showError('Photo access permission required to save !');
         return;
       }
 
@@ -114,7 +114,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã lưu ảnh: $fileName')),
+          SnackBar(content: Text('Saved Image: $fileName')),
         );
       }
     } catch (e) {

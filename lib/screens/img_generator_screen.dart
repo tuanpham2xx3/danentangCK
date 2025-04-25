@@ -124,7 +124,7 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('Lỗi tạo ảnh: ${e.toString()}');
+      _showError('Error Create Image: ${e.toString()}');
     }
   }
 
@@ -162,7 +162,7 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
       // Nếu đã được cấp quyền, tiến hành tải ảnh
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đang tải ảnh...')),
+          const SnackBar(content: Text('Creating ...')),
         );
       }
 
@@ -174,12 +174,12 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã lưu ảnh: $fileName')),
+          SnackBar(content: Text('Saved Image: $fileName')),
         );
       }
     } catch (e) {
       if (mounted) {
-        _showError('Lỗi khi tải ảnh: ${e.toString()}');
+        _showError('Error Getting Image: ${e.toString()}');
       }
     }
   }
@@ -260,7 +260,7 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
                   }
                 },
                 decoration: InputDecoration(
-                  labelText: 'Chọn model',
+                  labelText: 'Select model',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
                 ),
@@ -269,7 +269,7 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
               TextField(
                 controller: _promptController,
                 decoration: InputDecoration(
-                  labelText: 'Nhập prompt',
+                  labelText: 'Enter prompt',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
                 ),
@@ -278,21 +278,21 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _isLoading ? null : _generateImage,
-                child: _isLoading ? const CircularProgressIndicator() : const Text('Tạo ảnh'),
+                child: _isLoading ? const CircularProgressIndicator() : const Text('Generate Image'),
               ),
             ],
           ),
         ),
         Expanded(
           child: _onlyPromptImages.isEmpty
-              ? const Center(child: Text('Chưa có ảnh nào được tạo từ prompt'))
+              ? const Center(child: Text('No images have been created from prompt yet.'))
               : Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Ảnh mới tạo',
+                  'New image generate',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
