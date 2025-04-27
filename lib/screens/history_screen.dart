@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
 import 'package:dio/dio.dart';
+import '../services/share_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -175,13 +176,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
             right: 8,
             bottom: 8,
             child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: IconButton(
-                icon: const Icon(Icons.download, color: Colors.white),
-                onPressed: () => _downloadImage(imageUrl),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.download, color: Colors.white),
+                    onPressed: () => _downloadImage(imageUrl),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: () => ShareService.shareImage(imageUrl),
+                  ),
+                ],
               ),
             ),
           ),
@@ -189,4 +200,5 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
     );
   }
+
 }

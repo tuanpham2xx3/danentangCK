@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
 import '../models/generated_image.dart';
+import '../services/share_service.dart';
 
 class ImgGeneratorScreen extends StatefulWidget {
   const ImgGeneratorScreen({super.key});
@@ -196,28 +197,62 @@ class _ImgGeneratorScreenState extends State<ImgGeneratorScreen> {
                 context: context,
                 builder: (_) => Dialog(
                   child: InteractiveViewer(
-                    child: Image.network(imageUrl, fit: BoxFit.contain),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Center(
+                        child: Icon(Icons.error_outline, color: Colors.red, size: 32),
+                      ),
+                    ),
                   ),
                 ),
               );
             },
             child: Hero(
               tag: imageUrl,
-              child: Image.network(imageUrl, fit: BoxFit.cover),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator());
+                },
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Icon(Icons.error_outline, color: Colors.red, size: 32),
+                ),
+              ),
             ),
           ),
           Positioned(
             right: 8,
             bottom: 8,
-            child: IconButton(
-              icon: const Icon(Icons.download, color: Colors.white),
-              onPressed: () => _downloadImage(imageUrl),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.download, color: Colors.white),
+                    onPressed: () => _downloadImage(imageUrl),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: () => ShareService.shareImage(imageUrl),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {

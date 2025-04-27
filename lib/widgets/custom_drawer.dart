@@ -42,9 +42,79 @@ class _KlingDrawerState extends State<KlingDrawer> {
     }
   }
 
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  void _showCongratulationDialog(String title, String content) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.emoji_events,
+                  color: Colors.amber,
+                  size: 80,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  content,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -96,7 +166,7 @@ class _KlingDrawerState extends State<KlingDrawer> {
             ),
           ),
 
-          // Chỉ hiển thị nút GET PREMIUM nếu chưa phải Premium
+          // Nếu chưa Premium
           if (!_isPremium)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -122,13 +192,17 @@ class _KlingDrawerState extends State<KlingDrawer> {
                   RewardedAdHelper().loadAd(() async {
                     await _firebaseService.updatePremiumStatus(email, true);
                     setState(() => _isPremium = true);
-                    _showSnack("🎉 You have successfully upgraded to Premium!");
+
+                    _showCongratulationDialog(
+                        "🎉 Congratulations!",
+                        "You have successfully upgraded to Premium!"
+                    );
                   });
                 },
               ),
             ),
 
-          // Nút nhận thêm credit
+          // Nhận thêm credit
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -153,7 +227,11 @@ class _KlingDrawerState extends State<KlingDrawer> {
                 RewardedAdHelper().loadAd(() async {
                   double current = await _firebaseService.getUserCredit(email);
                   await _firebaseService.updateUserCredit(email, (current + 10).toInt());
-                  _showSnack("🎁 Get 10 more credits successfully!");
+
+                  _showCongratulationDialog(
+                      "🎁 Great!",
+                      "You have received 10 more credits!"
+                  );
                 });
               },
             ),
@@ -178,12 +256,6 @@ class _KlingDrawerState extends State<KlingDrawer> {
           ListTile(
             leading: const Icon(Icons.description, color: Colors.white),
             title: const Text('Terms of Service', style: TextStyle(color: Colors.white)),
-            onTap: () {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.share, color: Colors.white),
-            title: const Text('Information Shared with Third Party',
-                style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
           ListTile(
